@@ -1,0 +1,1129 @@
+# UNIVERSITY SKILL & HELP NETWORK
+## Product Requirements, User Flows, Feature Rules, and Build Specification
+
+**Working app name:** [ADD NAME LATER]  
+**Tagline:** [ADD TAGLINE LATER]  
+**Logo / brand identity:** [ADD LATER]  
+**Visual theme and colours:** [ADD LATER]  
+**Typography:** [ADD LATER]  
+**Initial institution:** National University of Modern Languages (NUML)  
+**Initial eligible email domain:** `@numl.edu.pk` only  
+**Platforms:** Responsive public website for desktop, laptop, tablet, and mobile; build as an installable Progressive Web App (PWA) if practical. Native Android/iOS apps may come later.  
+**Specification version:** 1.0  
+**Date:** 23 November 2026
+
+---
+
+# 0. Instructions for the developer / Claude
+
+Build a real, working, full-stack web application based on this specification. Do not create only a landing page, static mockup, or frontend demo. The result must include a functioning backend, database, authentication, email verification, user profiles, requests, matching, notifications, offers, messaging, job lifecycle, reviews, admin controls, and responsive user interface.
+
+The app name, logo, colours, typography, and theme are intentionally undecided. Use neutral, clean placeholder branding and centralize all brand settings so they can be changed later without rewriting the app.
+
+**Important implementation rules:**
+
+1. Do not invent missing product rules. Follow this document. Where a decision is marked **RECOMMENDED DEFAULT**, implement that default and document it.
+2. Do not show fake user counts, fake jobs, fake reviews, fake online users, or fake testimonials in production. Any demo records must be clearly labelled as demo/sample data and must be removable.
+3. Do not leave buttons or screens non-functional. If a feature is not included in the first release, hide it or label it clearly as “Coming later”; do not make it appear functional.
+4. Never put secret keys, database passwords, OAuth secrets, email credentials, or service-role keys in frontend code or the ZIP. Use environment variables and provide `.env.example` with placeholder values only.
+5. Enforce critical rules on the server/database, not only in the browser. For example, an email-domain check, one-account-per-email rule, one-review-per-job rule, request expiry, and permissions must not depend only on frontend validation.
+6. Use database constraints, server-side authorization, and row-level security or equivalent protections wherever supported.
+7. The final ZIP must contain the complete source code, database schema/migrations, seed script, tests, `.env.example`, setup instructions, deployment instructions, and a clear README.
+8. Before delivery, run the application, test the main flows, fix errors, and provide a list of what works and what still needs external credentials or production setup.
+
+---
+
+# 1. Product vision
+
+Create a university-only platform that connects students who need help with students who have useful skills. A student can post a request for almost any allowed kind of help, discover people by skills and university details, receive offers, chat privately, agree on work, complete the work, and leave a verified rating.
+
+The platform combines these ideas:
+- A small freelance/service marketplace for university students.
+- A request feed where students publicly ask for help.
+- A searchable student skills directory.
+- A professional student profile with portfolio and verified work history.
+- In-app messaging and connections.
+- A reputation system based on completed jobs and reviews.
+
+The platform is not intended to be a general public marketplace. Its main advantage is that members belong to the same approved university community and can be discovered by relevant skills, department, semester, campus, availability, and other preferences.
+
+## 1.1 Main promise
+
+**“I need something. Someone in my university can help.”**
+
+Examples:
+- Find a student who can edit a video.
+- Find a photographer for a campus event.
+- Find someone who can teach Java, OOP, mathematics, or another topic.
+- Find useful notes or study guidance.
+- Find a student who can design a poster, logo, presentation, or social media post.
+- Find a student who can help with a permitted programming or technical issue.
+- Find a tutor, project teammate, or person with a particular skill.
+- Offer a skill and receive requests from other students.
+
+## 1.2 Product principles
+
+1. **University-only access:** Only approved university email addresses can register.
+2. **Real identity eligibility:** A university email must be verified before an account becomes active.
+3. **Useful discovery:** Students should be able to find people by skill tags and filters rather than scrolling randomly.
+4. **Temporary requests:** Public requests should stay fresh and expire automatically.
+5. **Verified reputation:** A review must be tied to a real job record created by the platform.
+6. **User choice and comfort:** Users can set relevant preferences, including who they are comfortable working with.
+7. **Privacy and safety:** Personal contact details are not exposed publicly by default.
+8. **Responsive design:** The same product must work well on PC and mobile screens.
+9. **Useful, not noisy:** Notifications should be relevant, controlled, and time-limited where specified.
+10. **Trust over vanity metrics:** Public statistics must come from real platform activity.
+
+---
+
+# 2. Target users and roles
+
+## 2.1 Student member
+
+A verified student can:
+- Create and manage a profile.
+- Add skills, tags, portfolio items, work preferences, and availability.
+- Browse and search requests.
+- Create requests for help.
+- Receive matching request alerts.
+- Offer to help with requests.
+- Comment on or respond to a request in a structured way.
+- Message other students inside the platform.
+- Accept or be selected for a job.
+- Mark work as delivered and confirm completion.
+- Leave the required rating for a completed job.
+- See their verified reputation and work statistics.
+- Connect with other students, subject to privacy controls.
+- Report, block, or mute another member.
+
+## 2.2 Administrator / moderator
+
+An administrator can:
+- Manage approved email domains.
+- Manage university campuses, departments, programmes, and semester options.
+- Manage skill categories and tags.
+- View and manage user reports.
+- Review suspicious accounts, requests, offers, messages, and ratings.
+- Handle job disputes and moderation cases.
+- Suspend or restrict accounts when justified.
+- Manage featured notices and platform announcements.
+- View platform-level statistics without exposing private data unnecessarily.
+- Review audit logs for sensitive administrative actions.
+
+## 2.3 Future roles
+
+Future versions may add university society accounts, department pages, verified faculty mentors, or university administration accounts. These are not required for the first release.
+
+---
+
+# 3. Registration, login, and university-only access
+
+This is a core platform rule, not an optional filter.
+
+## 3.1 Approved email domain
+
+For the initial NUML version, an account may be created only with an email address whose domain is exactly:
+
+`@numl.edu.pk`
+
+Examples:
+- `student@numl.edu.pk` — allowed to proceed to verification.
+- `student@gmail.com` — rejected.
+- `student@yahoo.com` — rejected.
+- `student@numl.edu.pk.fake.com` — rejected.
+- `student@otheruniversity.edu.pk` — rejected unless an administrator later adds that exact domain as an approved institution domain.
+
+The domain comparison must be case-insensitive and must parse the part after the final `@`. Do not use a loose “contains numl” check. The approved domain list must be stored in configuration/database so it can be updated by an administrator later.
+
+**Before production launch:** Confirm that the university actually issues student mailboxes using this exact domain to the intended student population. If it uses more than one official domain, add each exact domain explicitly after verification.
+
+## 3.2 Sign-up flow
+
+1. User opens Sign Up.
+2. User enters their university email address.
+3. Server normalizes the email (trim spaces and lowercase it).
+4. Server checks the exact domain allowlist.
+5. If the domain is not approved, show a clear rejection message.
+6. If the domain is approved, send a one-time verification code to that email.
+7. User enters the code.
+8. If the code is valid and not expired, allow account creation.
+9. User completes the required profile fields.
+10. Account becomes active and can use the platform.
+
+A user must not be able to browse private member information, send messages, post requests, or make offers before successful email verification.
+
+## 3.3 Login methods
+
+Primary recommended method: university email + one-time code (passwordless email OTP).
+
+Google sign-in may be offered only as a convenience if it works with the university's institutional Google accounts. Even when Google sign-in is enabled:
+- The Google account's verified email must end in the exact approved domain.
+- A normal `@gmail.com` account must be rejected.
+- The server must validate the provider's verified-email claim.
+- Google login must not bypass the university email-domain rule.
+
+If institutional Google sign-in is not configured or available, use email OTP only. Do not promise Google login until it has been tested with real university accounts.
+
+## 3.4 OTP security rules
+
+**RECOMMENDED DEFAULTS:**
+- Code length: 6 digits.
+- Code expiry: 10 minutes.
+- Maximum failed attempts per code: 5.
+- Resend cooldown: 60 seconds.
+- Rate-limit repeated code requests by email address and IP address.
+- Store only a secure hash of the code where possible; never log the raw code in production.
+- Invalidate a code after successful use.
+- Do not reveal whether an email is already registered in a way that enables account enumeration.
+- Use HTTPS for all authentication pages and API calls.
+
+## 3.5 One account per university email
+
+- Enforce a unique normalized email address in the database.
+- One university email can have only one active account at a time.
+- The same email cannot be registered twice while its account is active.
+- A second Google account does not create a second platform account if it uses an already-used university email.
+- Do not use Google account identity alone as proof of university membership; the verified institutional email is the eligibility rule.
+
+**Important limitation:** Restricting email domains prevents ordinary public Gmail sign-ups, but it cannot prove that one human owns only one university mailbox. If the university issues multiple mailboxes or aliases to one person, stronger verification (such as a student ID check or an official university verification integration) may be needed later. Do not claim perfect one-person-one-account security based only on the domain.
+
+## 3.6 Account deletion and re-registration
+
+Users must have a clear option:
+
+`Settings → Account → Delete Account`
+
+Deletion flow:
+1. Explain what will happen.
+2. Ask the user to confirm.
+3. Send a one-time code to their verified university email.
+4. Require the correct code before deletion proceeds.
+5. Hide the public profile and remove it from discovery.
+6. Cancel or safely close active requests and unaccepted offers created by that account.
+7. Notify relevant participants where needed.
+8. Revoke active sessions and authentication tokens.
+
+The user may later register again with the same approved university email after re-verifying it.
+
+**RECOMMENDED DATA-HANDLING POLICY:**
+- Public profile information should be removed or anonymized after deletion, subject to the platform's published privacy policy and applicable law.
+- Retain only the minimum transaction, security, moderation, and audit records genuinely needed to prevent fraud, handle disputes, or meet legal obligations.
+- Never retain unnecessary private messages or personal data just because storage is available.
+- Keep an internal, access-restricted anti-abuse link to a prior deleted account where legally appropriate.
+- A newly registered profile starts with zero public jobs and zero public reviews by default; old public reputation must not be silently copied to the new profile.
+- Repeated delete/re-register behaviour may be flagged for manual review if used to evade moderation or reputation consequences.
+
+The privacy policy must explain exactly what is deleted, anonymized, or retained and for how long. Do not claim “all data is permanently deleted” if internal records remain.
+
+---
+
+# 4. Profile system
+
+Each student has a profile that acts as a student skill profile and mini professional portfolio.
+
+## 4.1 Required profile details
+
+- Display name.
+- Verified university email (private; do not display the full email publicly by default).
+- University/institution.
+- Campus.
+- Department.
+- Degree/programme (where relevant).
+- Current semester / year.
+- Profile image or avatar (optional).
+- Short bio / introduction.
+- Skill categories and skill tags.
+- Work preferences (online, on-campus, in-person, or either).
+- Preferred payment methods (informational only).
+- Availability schedule.
+- Optional preferred working arrangement/gender preference settings.
+
+The user should be able to edit profile details when their semester or department information changes, while retaining historical job records.
+
+## 4.2 Skills and tags
+
+Skills must use a searchable, standardized tag system. Do not rely only on free-text bios.
+
+Example categories and tags:
+
+**Programming & Technology**
+- Java, C++, Python, JavaScript, HTML, CSS, React, Web Development, Databases, Debugging, PC Troubleshooting, Software Setup.
+
+**Graphic Design & UI**
+- Photoshop, Illustrator, Canva, Logo Design, Poster Design, Presentation Design, UI/UX, Figma, Branding.
+
+**Video & Media**
+- Video Editing, Reels/Shorts, Premiere Pro, After Effects, CapCut, Motion Graphics, Photography, Event Photography, Videography.
+
+**Academic Help**
+- Mathematics, Programming Tutoring, OOP, Discrete Structures, Notes, Study Guidance, Exam Preparation, Concept Explanation.
+
+**Writing & Communication**
+- Content Writing, Proofreading, Translation, Copywriting, CV Writing, Report Formatting, Presentation Writing.
+
+**Business & Other**
+- Accounting, Excel, Marketing, Social Media Management, Data Entry, Research Assistance, Event Support, Other.
+
+Administrators can add, merge, rename, or deactivate tags. Users can suggest a new tag if it does not exist.
+
+## 4.3 Portfolio
+
+Users can add examples of work they have done.
+
+Each portfolio item may include:
+- Title.
+- Description.
+- Skill tags.
+- Image/video/document preview or external link, subject to file rules.
+- Completion date or approximate date.
+- Optional client permission/credit statement.
+- Whether the work was done through this platform or independently.
+
+Clearly distinguish:
+- **Verified platform work:** linked to a completed job record.
+- **Personal portfolio work:** uploaded or linked by the user and not independently verified by the platform.
+
+Do not display private client information or private course material without permission.
+
+## 4.4 Availability and online status
+
+Profiles should show, where the user permits:
+- Online now / offline.
+- Last active time (e.g. “Active 12 minutes ago”).
+- Preferred available days and time ranges.
+- Work mode: online, in-person/on campus, or either.
+
+Users must be able to hide online status and last-seen information. Do not expose exact activity details to people the user has blocked.
+
+Availability must be separated into two data types:
+1. **User-set schedule:** the user manually chooses when they are usually available.
+2. **Observed activity/work pattern:** statistics derived from actual platform activity, such as usual response periods. Label these as estimates, not guaranteed availability.
+
+## 4.5 Profile work graph and statistics
+
+Show an attractive, understandable work summary based only on real platform records.
+
+Example profile summary:
+
+- **4.86 / 5 average rating**
+- **37 verified reviews**
+- **37 completed jobs**
+- **31 unique clients**
+- **6 departments served**
+- **12 repeat clients**
+- **94% on-time completion** (only when enough reliable records exist)
+
+The statistics must be calculated from the database, not typed in by users.
+
+Suggested graphs:
+- Completed jobs by month.
+- Average rating trend by month (show the number of reviews behind each period).
+- Most requested skills.
+- User-set weekly availability.
+- Typical response-time ranges, if enough data exists.
+
+Do not infer availability from a single login. Do not show a percentage if there is insufficient data. Define every statistic clearly in a tooltip or help text.
+
+## 4.6 Preferred payment methods
+
+Users may list the ways they prefer to receive payment:
+- Easypaisa.
+- JazzCash.
+- NayaPay.
+- Bank transfer.
+- Cash / in person.
+- Free / no payment required.
+- Other (optional).
+
+The platform does not process, hold, guarantee, or escrow money in the first release. Payment is arranged directly between students outside the app. The profile may list a preferred method, but private account numbers, wallet IDs, or phone numbers must not be exposed publicly. If users choose to share payment details, they should do so privately and at their own risk.
+
+---
+
+# 5. Main navigation and key screens
+
+Use a consistent responsive navigation. On desktop, a sidebar or top navigation is acceptable. On mobile, use a compact bottom navigation or menu.
+
+Recommended main sections:
+1. **Home / Request Feed** — scroll through active help requests.
+2. **Find People** — search student profiles by skill and filters.
+3. **Services / Skills** — browse people who are offering skills.
+4. **Create Request** — make a new request.
+5. **Messages** — private conversations.
+6. **Request Alerts** — temporary matched-request notifications.
+7. **My Profile** — portfolio, reviews, stats, and availability.
+8. **Connections** — students the user has connected with.
+9. **Settings** — account, privacy, notifications, and deletion.
+
+The request feed is the main landing screen after login. Do not make the app feel like a generic social network. Social features should support helping, finding, and working with other students.
+
+---
+
+# 6. Request system — the core feature
+
+A request is a temporary public post explaining what help a student needs.
+
+Examples:
+- “I need someone to edit a 2-minute event video.”
+- “Can someone explain polymorphism in Java?”
+- “I need a photographer for our department event.”
+- “Looking for notes for Discrete Structures.”
+- “Need help troubleshooting my laptop.”
+- “Looking for a teammate for a permitted semester project.”
+
+## 6.1 Create-request form
+
+The form should be clear and easy to complete on mobile.
+
+Required or optional fields:
+- Short title (required).
+- Description (required).
+- Main category (required).
+- Skill tags (at least one recommended; required where practical).
+- Who can see/respond (required; default can be “eligible members at my campus”).
+- Preferred department(s): Any or selected department(s).
+- Preferred semester range: Any or a minimum/maximum semester.
+- Preferred campus: Any or selected campus.
+- Preferred helper gender: Any / Male / Female (optional preference; see Section 12).
+- Work mode: Online / In person on campus / Either.
+- Preferred availability or deadline (optional).
+- Budget: Free / Paid / Negotiable.
+- Budget range or amount (optional for paid jobs).
+- Preferred payment method (optional; informational only).
+- Additional requirements (optional).
+
+The form must explain that payment is arranged directly between users and is not processed by the platform.
+
+## 6.2 Department and semester targeting
+
+The requester can choose who they are looking for:
+- Any department.
+- One or more specific departments.
+- Any semester.
+- A semester range (for example, semester 3 to semester 6).
+- Any campus or a selected campus.
+
+Example: “Need someone from Software Engineering or Computer Science, semester 4 or above, who knows Java.”
+
+A student should receive a match alert only if their profile satisfies the request's selected filters and has at least one matching skill tag (unless the request is explicitly open to any skill/anyone).
+
+## 6.3 Request feed cards
+
+Each request card should show:
+- Request title.
+- Short description preview.
+- Category and skill tags.
+- Requester's display name and profile preview.
+- Department, campus, and semester of requester (based on their profile visibility settings).
+- Budget/payment status if supplied.
+- Preferred helper criteria in a concise form.
+- Posted time (e.g. “Posted 12 minutes ago”).
+- Time remaining before expiry.
+- Request status.
+- Number of offers/people interested.
+- Buttons to view details, offer help, and report.
+
+Example:
+
+**Need a Video Editor**  
+BS Software Engineering · Semester 2 · NUML Rawalpindi  
+“Need someone to edit a 2-minute society event video.”  
+Tags: Video Editing · Premiere Pro · Reels  
+Budget: Rs. 2,000 (example only)  
+Posted 12 minutes ago · Expires in 23h 48m  
+3 people interested
+
+## 6.4 Request lifetime and expiry
+
+- A request can remain in the public active feed for a maximum of 24 hours from its original posting time.
+- Show the age of the request and a visible countdown/time-remaining label.
+- When the 24-hour period ends, automatically change its state to **Expired** and remove it from the active feed.
+- Do not silently refresh or extend a request's lifetime.
+- A user can create a new request after an earlier one expires.
+- The owner may manually close/cancel a request sooner.
+
+The expiry job must run server-side (scheduled worker/cron or equivalent). Do not rely on the user's browser being open.
+
+## 6.5 Request alerts and 12-hour inbox rule
+
+When a request is posted, the matching system identifies eligible students and sends an in-app request alert to them.
+
+Each matching alert:
+- Appears in the user's **Request Alerts** inbox.
+- Shows the request title, skill tags, requester details allowed by privacy settings, time posted, and a link to open the request.
+- Remains in that request-alert inbox for 12 hours from delivery.
+- Is then automatically removed from the Request Alerts inbox.
+- Disappearing from the alert inbox does not delete or expire the actual request.
+- The actual request may continue to appear in the public feed until its 24-hour deadline or until its status changes.
+
+Deduplicate alerts so the same user does not receive repeated alerts for the same request because of duplicate matching tags. Do not send an alert to the request creator. Users should be able to mute request alerts or adjust categories/skills they want alerts for.
+
+Separate request-match alerts from important system messages such as private messages, job status changes, security alerts, and account notices. The 12-hour expiry applies specifically to temporary request-match alerts, not necessarily to all messages or security notices.
+
+## 6.6 Matching algorithm
+
+Match request to profiles using the selected criteria:
+1. Skill tag match.
+2. Department match (if restricted).
+3. Semester range match (if restricted).
+4. Campus match (if restricted).
+5. Preferred helper gender (if selected and voluntarily provided by the member).
+6. Work mode and availability (if selected).
+7. Account active and email verified.
+8. User has not blocked the requester and is not blocked by them.
+
+The system should allow “Any” for filters. A user should not receive a notification for a request that excludes their department, semester, campus, or selected preference.
+
+Do not rank people only by star rating. Search/matching can prioritize relevance and availability, while showing reputation transparently.
+
+## 6.7 Offers and visible interest
+
+Several people can respond to the same request before the requester selects one.
+
+An offer should display:
+- Person's profile name and image/avatar.
+- Department, semester, and campus.
+- Matching skill tags.
+- Average rating and completed jobs.
+- Short offer message (e.g. “I can edit this; I have done similar event videos”).
+- Availability/estimated delivery time if supplied.
+- View Profile button.
+- Message button.
+- Accept Offer button (visible to request owner only).
+
+The requester and other eligible members who can view the request should be able to see the public offer/comment thread, including which students are willing to help. This matches the intended community feel: if five students offer help, viewers can see those five responses and compare their visible profile summaries. Each public offer should show the student's name/avatar, department, semester, relevant tags, rating/review count, completed-job count, and a short offer message.
+
+Use a structured “Offer help” action that creates a visible offer/comment card rather than an uncontrolled free-form chat thread. Keep the public response focused on availability and relevant experience. Private details, phone numbers, wallet IDs, personal email addresses, and longer discussions must stay in private in-app messages. The requester alone can accept one offer. Add reporting and moderation controls to the public thread, plus rate limits to prevent spam.
+
+## 6.8 Selecting a helper and processing state
+
+When the requester accepts one offer:
+- Create a unique job record.
+- Change the request status from **Active** to **Processing**.
+- Temporarily remove the request from the public active-request feed so new people do not keep applying.
+- Keep the request visible to its owner and selected helper in their job/request details.
+- Notify the selected helper and requester.
+- Close or mark other pending offers as not selected.
+- Start the in-app job conversation if one does not already exist.
+
+For the first version, one request should have one selected helper. Multi-helper jobs can be considered later.
+
+## 6.9 If a job is declined or cancelled during processing
+
+If the selected helper declines before work begins or cannot continue:
+- The requester can cancel the selected job.
+- The request returns to **Active** if time remains before its original 24-hour expiry.
+- The request returns to the feed with its original remaining time; do not restart the 24-hour clock automatically.
+- Previously interested people may be notified that the request is active again, subject to notification settings.
+- If the original expiry time has already passed, the request becomes **Expired** instead.
+
+If the requester cancels the request, mark it **Cancelled** and remove it from the active feed.
+
+If a job is already in progress and there is a disagreement, use the dispute/report flow instead of allowing either side to rewrite the history.
+
+## 6.10 Job completion
+
+Suggested lifecycle:
+
+`Active → Offer(s) Received → Processing → Work Delivered → Completed`
+
+Alternative outcomes:
+
+`Processing → Cancelled / Declined → Active again (only if time remains) or Expired`
+
+Detailed completion flow:
+1. Helper marks work as **Delivered / Ready for Review**.
+2. Requester receives a notification and reviews the work.
+3. Requester can accept completion or raise a problem/dispute.
+4. To close a normal successful job as **Completed**, requester must submit a star rating for the helper.
+5. Written comment is optional.
+6. After rating submission, mark the job Completed, remove the request from the public feed permanently, and update statistics.
+7. Each completed job creates exactly one verified review from the requester to the helper.
+
+**RECOMMENDED SAFEGUARD:** If the requester does not respond after reminders, provide an escalation path for support/admin review. Do not automatically force a positive review. Allow admin to resolve the record with an explicit status such as “Closed after review” or “Cancelled/disputed” so statistics remain honest.
+
+---
+
+# 7. Reviews and reputation
+
+Reputation is one of the platform's most important trust features.
+
+## 7.1 One completed job = one required star rating
+
+If a profile shows:
+- 37 completed jobs
+
+then it should normally show:
+- 37 verified reviews/ratings
+
+Every job successfully completed through the platform must have one rating from the requester for the helper.
+
+Rules:
+- Star rating is required to complete the normal job-closing process.
+- Written comment is optional.
+- One review only per completed job.
+- Only the requester on that job can review the selected helper.
+- A review must reference a valid completed job ID.
+- Reviews cannot be created freely from a profile page.
+- Users cannot review themselves.
+- Users cannot edit the star rating repeatedly after submission. Any correction request goes through support/admin review.
+- A job cannot generate duplicate reviews if the user refreshes or submits twice.
+
+The first release only requires the requester to review the helper. Two-way reviews (helper rating requester) may be considered later, but must not be confused with the required helper rating count.
+
+## 7.2 Profile reputation display
+
+Example:
+
+**4.86 / 5**  
+**37 verified reviews**  
+**37 completed jobs**  
+**31 unique clients**  
+**6 departments served**  
+**12 repeat clients**
+
+Definitions:
+- Average rating = average of all valid verified star ratings for that profile.
+- Verified reviews = count of valid rating records tied to completed jobs.
+- Completed jobs = count of jobs marked completed under the defined lifecycle.
+- Unique clients = count of distinct requester accounts that completed at least one job with this helper.
+- Departments served = count of distinct requester departments represented by completed jobs, using department-at-job-time where possible.
+- Repeat clients = number of distinct clients who completed more than one job with that helper.
+
+If there are no ratings, show “No reviews yet” rather than 0.00 stars. If a metric has insufficient records, hide it or label it clearly.
+
+## 7.3 Review breakdown
+
+A profile may show optional rating categories such as:
+- Quality of work.
+- Communication.
+- Reliability.
+- On-time delivery.
+
+**RECOMMENDED DEFAULT:** Keep the overall star rating mandatory; make category-specific subratings optional in the first version to keep the review form fast. Do not make the review unnecessarily long.
+
+## 7.4 Fraud prevention for reviews
+
+- Reviews are only possible for completed jobs.
+- One review per job.
+- The database must enforce unique `(job_id, reviewer_id)` or equivalent.
+- Requester and helper must be different accounts.
+- Only the requester assigned to the job may submit the helper review.
+- Flag suspicious patterns such as repeated reciprocal hiring, a large number of jobs between the same two accounts, unusually fast completion, many accounts controlled from the same signals, or repeated account deletion/re-registration.
+- Do not automatically accuse users based on shared campus Wi-Fi or a single shared network signal; university members may share networks and devices legitimately.
+- Provide an admin review process for suspicious reputation activity.
+- Admins may hide or remove fraudulent reviews with a recorded reason and audit trail. Do not silently change ratings.
+
+---
+
+# 8. Search and discovery
+
+Students should be able to search for a person directly rather than waiting for someone to post a request.
+
+## 8.1 Find People
+
+Search by:
+- Skill name or tag.
+- Name (where allowed).
+- Department.
+- Semester or semester range.
+- Campus.
+- Work mode (online/in person/either).
+- Availability (available now / selected schedule).
+- Preferred helper gender, only where the user has voluntarily provided a matching setting.
+- Rating range (optional).
+- Completed jobs (optional sorting/filter).
+
+Results should show profile cards with:
+- Name.
+- Department / semester / campus.
+- Skills.
+- Rating and review count.
+- Completed jobs.
+- Availability status if visible.
+- Short bio.
+- View Profile and Message buttons.
+
+Search results must not expose private email addresses, phone numbers, wallet IDs, or other personal contact details.
+
+## 8.2 Services / skill directory
+
+A student can indicate that they are willing to offer a service or skill. The directory groups profiles by tags/categories and lets members browse people who offer those skills.
+
+A student should not have to create a separate seller account. One student profile can both request help and offer help.
+
+---
+
+# 9. Messaging and connections
+
+## 9.1 In-app messages
+
+Provide private one-to-one messaging for members who are allowed to contact one another.
+
+Required features:
+- Conversation list.
+- Message history.
+- Sent time.
+- Read/unread indicator where practical.
+- Basic text messages.
+- Optional image/file attachments with strict file-size/type checks.
+- Mute conversation.
+- Block user.
+- Report message/conversation.
+- Job-linked conversation context when messaging about a request/job.
+
+Do not reveal a user's private email address simply because someone sends them a message. Do not require users to move to WhatsApp to complete the platform workflow.
+
+## 9.2 Connections
+
+Users may send and accept connection requests. A connection list can help students remember people they have worked with or want to network with.
+
+Connections must be optional and must not be required to post a request, make an offer, or message about a job.
+
+## 9.3 Community/help interactions
+
+The product may include a lightweight help/community area for questions such as:
+- “Can someone explain inheritance in Java?”
+- “Which course should I prepare for next semester?”
+- “Anyone looking for a project teammate?”
+
+Keep this area focused on university help and skill sharing. Do not turn the app into a general-purpose social network. Requests with a clear deliverable should use the main Request system so the job/review workflow remains consistent.
+
+---
+
+# 10. Notifications
+
+Notification types:
+- New request matches your skills/filters (expires from Request Alerts inbox after 12 hours).
+- Someone makes an offer on your request.
+- Someone accepts your offer or selects you.
+- A job changes to Processing.
+- Work is marked Delivered / Ready for Review.
+- Job is completed, cancelled, or disputed.
+- A review is received.
+- New private message.
+- Connection request accepted.
+- Security and account notices.
+
+Rules:
+- Request-match alerts have a 12-hour inbox lifetime.
+- The actual public request has a maximum 24-hour lifetime.
+- Important job, message, and security notifications should not be deleted by the request-alert 12-hour rule.
+- Allow users to configure non-essential notification preferences.
+- Do not send duplicate notifications for the same event.
+- Email notifications may be optional; in-app notifications are required for the MVP.
+- Never send sensitive message content in email subject lines or lock-screen previews by default.
+
+---
+
+# 11. Gender and comfort preferences
+
+The requester may choose who they are comfortable working with:
+- Any.
+- Male.
+- Female.
+
+This is intended as a comfort/safety preference in a university environment.
+
+Rules:
+- “Any” should be the default.
+- Do not infer gender from a name, photo, or email address.
+- If gender matching is offered, the member must voluntarily choose whether to provide this information and whether it can be used for matching.
+- A member should be able to hide the field from their public profile while still choosing a private matching preference, where the platform's privacy design allows it.
+- Do not use gender as a reputation score, quality indicator, or public ranking factor.
+- Do not reveal a user's private preference to other members unless necessary and clearly explained.
+- Ensure the feature does not create unsafe exposure or harassment; provide block/report controls and moderation.
+
+---
+
+# 12. Safety, moderation, and academic integrity
+
+Required safety controls:
+- Report user, request, offer, message, and portfolio item.
+- Block user so they cannot message or interact with the blocker where technically possible.
+- Admin review queue for reported content.
+- Rate limits for posting requests, sending messages, and making offers.
+- Spam and scam detection rules.
+- Upload validation and file size limits.
+- Clear community guidelines and terms of use.
+- Privacy settings for profile visibility, online status, and last seen.
+
+Academic integrity rules:
+- The platform may support tutoring, concept explanations, notes sharing where permitted, proofreading, formatting, study help, and legitimate collaboration.
+- The platform must not promote exam cheating, impersonation, plagiarism, or paying someone to submit assessed work as if it were the requester's own work.
+- Add a report reason for academic misconduct.
+- Show a short reminder when users create academic requests: “Use this platform for learning and permitted support, not cheating or submitting another person's work as your own.”
+
+---
+
+# 13. Admin dashboard
+
+An admin dashboard is required for a public launch.
+
+Minimum features:
+- Secure admin-only login/role.
+- User list with search and filters.
+- View account verification status and basic profile data.
+- Suspend, restrict, restore, or deactivate accounts.
+- View reports and take documented action.
+- Manage approved university email domains.
+- Manage campuses, departments, programmes, semester list, skill categories, and tags.
+- View requests by status and remove policy-violating requests.
+- Review suspicious jobs/reviews and reputation activity.
+- Handle disputes and account appeals.
+- Configure request duration and request-alert duration (initially 24h and 12h).
+- View aggregate activity metrics.
+- Maintain audit logs for admin actions.
+
+Administrative actions affecting a user's reputation or access must record who performed the action, when, and why.
+
+---
+
+# 14. Data model / database entities
+
+Design a relational database with appropriate foreign keys, indexes, uniqueness constraints, and access rules. Exact naming can differ, but the concepts below must exist.
+
+Suggested entities:
+
+1. **users** — user ID, normalized institutional email, verification status, auth provider ID, account status, created date, deleted date, last active, profile visibility settings.
+2. **institutions** — institution name and approved email domains.
+3. **campuses** — campus records linked to institution.
+4. **departments** — department records linked to institution/campus where needed.
+5. **programmes** — optional degree/programme list.
+6. **user_profiles** — display name, bio, campus, department, programme, semester, image, work mode, optional gender preference fields, visibility settings.
+7. **skills** — canonical skill tags and categories.
+8. **user_skills** — many-to-many link between users and skills, optionally with self-described proficiency.
+9. **portfolio_items** — user-created portfolio entries and attachments/links.
+10. **availability_slots** — user-set available days and time ranges/time zone.
+11. **requests** — owner, title, description, category, budget, work mode, helper preferences, status, created time, expiry time, selected helper/job reference.
+12. **request_skills** — skill tags linked to each request.
+13. **request_targets** — selected departments, semesters, campuses, and other target filters.
+14. **request_alerts** — recipient, request, sent time, expiry time, read state; unique per recipient/request.
+15. **offers** — request, offer creator, message, availability, status, created time.
+16. **jobs** — accepted offer/request, requester, helper, status, accepted time, delivered time, completed time, cancellation/dispute reason.
+17. **conversations** — participants and optional linked request/job.
+18. **messages** — sender, conversation, content, attachment metadata, sent/read timestamps.
+19. **reviews** — job, reviewer, reviewee, star rating, optional comment, created time, moderation status; unique per job/reviewer.
+20. **connections** — requester user, target user, connection status, timestamps.
+21. **blocks** — blocker and blocked user.
+22. **reports** — reporter, reported object/user, reason, details, status, admin resolution.
+23. **notifications** — message/job/security/connection notifications distinct from expiring request alerts.
+24. **admin_audit_logs** — administrator, action, target, reason, timestamp.
+25. **account_deletion_records** — minimal restricted record for deletion, retention, re-registration, and anti-abuse policy.
+
+Use soft deletion/anonymization only where required by the privacy policy. Apply data retention rules rather than retaining everything indefinitely.
+
+---
+
+# 15. Business rules that must be enforced
+
+These are non-negotiable invariants:
+
+1. Only exact approved university email domains can register.
+2. Initial allowed domain is `@numl.edu.pk`; `@gmail.com` and all other unapproved domains are rejected.
+3. Email ownership must be verified by OTP before the account becomes active.
+4. One active account per normalized university email.
+5. A public request has a maximum 24-hour active lifetime.
+6. A matching request alert stays in the Request Alerts inbox for 12 hours, then disappears; the actual request is not deleted by this alert expiry.
+7. Requests use explicit status values and server-controlled state transitions.
+8. Only the request owner can accept an offer.
+9. Accepting an offer creates one job and changes the request to Processing.
+10. A Processing request is removed from the public Active feed.
+11. If the selected helper declines/cancels and the request has time remaining, return it to Active with the original expiry time; otherwise mark it Expired.
+12. A normally Completed job must have a required star rating from the requester; written comment is optional.
+13. One completed job creates exactly one verified helper review in the first release.
+14. Reviews cannot exist without a valid job record.
+15. A user cannot review themselves or review the same job more than once.
+16. Profile statistics are calculated from verified database records, not manually entered.
+17. Public contact details and payment account identifiers are private by default.
+18. Payment is arranged directly between users; the platform does not hold money or offer escrow in the first release.
+19. Block/report and moderation tools must be available.
+20. Important account, security, job, and message notifications are not removed by the 12-hour request-alert expiry rule.
+
+---
+
+# 16. Recommended technology and implementation approach
+
+Use a maintainable, commonly supported full-stack stack. The following is a recommended default; use an equivalent only if there is a strong technical reason and explain the change.
+
+**Frontend and server:** Next.js (App Router) + TypeScript.  
+**UI:** Tailwind CSS and an accessible component system.  
+**Database:** PostgreSQL.  
+**Backend services:** Supabase for PostgreSQL, authentication support, file storage, and realtime messaging/updates, or an equivalent production-ready backend.  
+**Email:** Transactional email service/SMTP configured for one-time codes.  
+**Hosting:** A suitable production host such as Vercel for the web app and a managed PostgreSQL/Supabase project for data services.  
+**Validation:** Shared server-side schemas (e.g. Zod or equivalent).  
+**Testing:** Unit tests for business rules, integration tests for database/API flows, and end-to-end tests for major user journeys.
+
+Implementation requirements:
+- Use TypeScript types for important entities and state values.
+- Use database migrations; do not rely on manually creating tables in production.
+- Enforce authorization server-side and in database policies.
+- Store uploaded files in private or access-controlled storage where appropriate.
+- Use signed URLs or equivalent for private attachments.
+- Use pagination/infinite scrolling for feeds and search results.
+- Use server-side pagination and indexes; do not load every user/request into the browser.
+- Use a scheduled server-side task for request/alert expiry.
+- Add graceful loading, empty, error, and offline states.
+- Use accessible labels, keyboard navigation, readable contrast, and responsive layouts.
+
+---
+
+# 17. Responsive design requirements
+
+The website must work on:
+- Desktop monitors.
+- Laptops.
+- Tablets.
+- Android phones.
+- iPhones/mobile browsers.
+
+Design mobile-first, then expand for desktop.
+
+Mobile requirements:
+- No horizontal overflow.
+- Easy thumb-friendly buttons.
+- Compact request cards.
+- Search/filter controls that work in a slide-over or bottom sheet.
+- Sticky or easily accessible Create Request action.
+- Readable chat and profile layouts.
+- Forms split into manageable sections where needed.
+
+Desktop requirements:
+- Use available width without making lines too long.
+- Use a sensible content max-width.
+- Request feed and filters may use a two-column layout.
+- Profile can show stats, skills, and portfolio in a wider layout.
+- Admin tables must support searching and pagination.
+
+PWA recommendation:
+- Make the site installable from compatible mobile browsers if practical.
+- Support a suitable app icon and manifest once branding is supplied.
+- Do not claim native app features that the website does not actually support.
+
+---
+
+# 18. Privacy and security requirements
+
+- HTTPS in production.
+- Secure session handling and logout from all sessions where appropriate.
+- Strong server-side access checks for every private resource.
+- Database row-level security or equivalent authorization policies.
+- Input validation and output escaping.
+- Protection against SQL injection, cross-site scripting, cross-site request forgery, and unauthorized file access.
+- Rate limits for OTP, registration, login, messages, offers, requests, and reports.
+- File upload limits, allowed file types, and safe file delivery.
+- Do not store payment passwords, wallet PINs, or banking credentials.
+- Do not display full university email addresses publicly by default.
+- Do not expose private chats to other students or ordinary administrators unless necessary for a reported case and covered by policy.
+- Restrict admin access and log sensitive actions.
+- Keep secrets out of source control.
+- Provide a privacy policy, terms of service, community guidelines, and account deletion explanation before public launch.
+- Provide a backup and recovery plan.
+- Follow applicable privacy and data protection laws; get appropriate legal review before public launch.
+
+---
+
+# 19. MVP scope versus later features
+
+Build a solid working first release before adding everything.
+
+## 19.1 MVP — required for first usable launch
+
+- University-domain-only registration (`@numl.edu.pk` initially).
+- Email OTP verification and login.
+- One active account per verified email.
+- Profile creation/editing.
+- Department, campus, semester, skills, and portfolio.
+- Request creation and 24-hour expiry.
+- Request feed with search/filter.
+- Matching alerts with 12-hour inbox expiry.
+- Offers and requester selection.
+- Processing/declined/cancelled/completed job states.
+- In-app one-to-one messaging.
+- Mandatory star rating to complete a job; optional comment.
+- Verified job/review counts and profile stats.
+- Find People and Services directory.
+- Online/last-active visibility controls.
+- Basic availability schedule.
+- Block/report tools.
+- Basic admin dashboard and moderation.
+- Account deletion with email OTP confirmation.
+- Responsive desktop/mobile UI.
+- README, environment setup, database migrations, tests, and deployment instructions.
+
+## 19.2 Phase 2 — useful improvements
+
+- Better availability/work-pattern graphs.
+- Advanced portfolio previews.
+- Connection system.
+- More detailed review categories.
+- Email/push notification options.
+- Improved search ranking and recommendations.
+- Verified project/team formation.
+- Department/community spaces.
+- More campuses or universities, if formally approved.
+- More detailed analytics and fraud review tools.
+
+## 19.3 Not required in the first release
+
+- In-app payments, wallet, escrow, refunds, or payment guarantees.
+- Native Android/iOS apps.
+- Public access for Gmail or non-university users.
+- General public marketplace listings.
+- Complex bidding/auction system.
+- Public phone-number directory.
+- AI-generated reputation scores.
+
+---
+
+# 20. Important user journeys to implement and test
+
+## Journey A — new student registration
+1. Student enters `student@numl.edu.pk`.
+2. System accepts the domain and sends OTP.
+3. Student enters correct OTP.
+4. Student completes profile.
+5. Student reaches the request feed.
+6. A `@gmail.com` user is rejected before account activation.
+
+## Journey B — create a request
+1. Student opens Create Request.
+2. Adds title, description, skill tags, department/semester/campus targets, gender preference if desired, work mode, and budget.
+3. Posts request.
+4. Request appears in the active feed with a 24-hour countdown.
+5. Matching students receive one request alert each.
+6. Each alert expires from the Request Alerts inbox after 12 hours.
+
+## Journey C — offer help and get selected
+1. A matching student opens the request.
+2. Reviews requester details and offers help with a short message.
+3. Requester sees offers and opens profiles.
+4. Requester selects one helper.
+5. Job record is created.
+6. Request changes to Processing and disappears from the public active feed.
+7. Both users can chat in-app.
+
+## Journey D — successful completion and review
+1. Helper marks work Delivered.
+2. Requester checks the work.
+3. Requester submits required star rating and optional written comment.
+4. Job becomes Completed.
+5. Request disappears from active feed permanently.
+6. Helper gets one verified review and updated statistics.
+7. Counts remain consistent: each normally completed job has one required rating.
+
+## Journey E — helper cancels during processing
+1. Request is Processing with a selected helper.
+2. Helper declines/cancels or requester ends the selection.
+3. If original 24-hour expiry has time remaining, request returns to Active with the remaining time.
+4. If expiry has passed, request becomes Expired.
+5. Interested users may be notified that it is active again.
+
+## Journey F — delete and re-register
+1. User opens Settings → Delete Account.
+2. User receives OTP at their university email.
+3. Correct OTP is required.
+4. Public profile is hidden, sessions revoked, and active requests handled safely.
+5. Later, same university email may be verified and used to create a new account.
+6. New public profile starts with zero public stats; minimal prior anti-abuse records remain restricted according to the privacy policy.
+
+## Journey G — report and block
+1. User reports a request, message, or profile.
+2. Report appears in admin queue.
+3. User can block the reported member.
+4. Admin reviews and records an action/reason.
+5. Report status is updated and relevant users are notified where appropriate.
+
+---
+
+# 21. Acceptance checklist
+
+The first release is not ready until all of the following are true:
+
+- [ ] `@gmail.com` and other unapproved email domains cannot register.
+- [ ] Only exact approved institutional domains are accepted.
+- [ ] OTP verification is required and expires securely.
+- [ ] One active account per normalized university email is enforced by the database.
+- [ ] Users can create and edit complete profiles.
+- [ ] Skill tags can be searched and filtered.
+- [ ] Users can create requests with department, semester, campus, skill, gender preference, and work-mode filters.
+- [ ] Requests expire after 24 hours automatically.
+- [ ] Matching request alerts disappear from the Request Alerts inbox after 12 hours without deleting the request itself.
+- [ ] The same recipient does not receive duplicate match alerts for one request.
+- [ ] Multiple students can submit offers on a request.
+- [ ] Only the requester can accept an offer.
+- [ ] Accepting an offer creates a job and hides the request from the active public feed.
+- [ ] A declined/cancelled processing job returns the request to Active only if original time remains.
+- [ ] Completed jobs require a star rating; written comments are optional.
+- [ ] Each completed job can create only one verified review.
+- [ ] The profile's completed-job count and verified-review count remain consistent for normal completed jobs.
+- [ ] Unique clients, departments served, and other stats are database-calculated.
+- [ ] Users can message one another in the app without exposing private email addresses.
+- [ ] Users can block and report other members.
+- [ ] Users can control online/last-seen visibility.
+- [ ] Account deletion requires a code sent to the university email.
+- [ ] Same email can be used again after deletion, subject to the documented re-registration policy.
+- [ ] The public site works on desktop and mobile without broken layouts.
+- [ ] Admin can manage users, tags, domains, reports, and requests.
+- [ ] No secret credentials are included in the ZIP.
+- [ ] README explains local setup and production deployment.
+- [ ] Automated tests cover the most important business rules.
+
+---
+
+# 22. Required deliverables from Claude
+
+Return a ZIP file containing:
+
+1. Complete frontend and backend source code.
+2. Database schema and migrations.
+3. Seed/demo data script with clearly marked sample users and requests.
+4. Authentication and university-email OTP implementation.
+5. Request, matching, offer, job, messaging, review, profile, and admin functionality.
+6. Responsive UI for desktop and mobile.
+7. `.env.example` containing placeholder keys only.
+8. `README.md` with exact setup instructions.
+9. Deployment guide for hosting the website publicly.
+10. Instructions for configuring the email provider and approved domain.
+11. Test suite and test instructions.
+12. A short `FEATURE_STATUS.md` showing what is fully implemented, partially implemented, or requires external credentials.
+13. A short `SECURITY_NOTES.md` explaining the main security protections and any known limitations.
+
+Do not say the application is production-ready if email delivery, database security policies, deployment settings, domain verification, or any core flow has not been tested. Clearly identify any setup that the website owner must complete.
+
+---
+
+# 23. Details to add later
+
+Fill these in before final visual design:
+
+- **App name:** [ADD LATER]
+- **Tagline:** [ADD LATER]
+- **Logo:** [ADD LATER]
+- **Primary colour:** [ADD LATER]
+- **Secondary colour:** [ADD LATER]
+- **Accent colour:** [ADD LATER]
+- **Background style:** [ADD LATER]
+- **Light mode / dark mode / both:** [ADD LATER]
+- **Font preference:** [ADD LATER]
+- **Preferred visual style:** [ADD LATER]
+- **Initial campuses:** [ADD LATER]
+- **Initial departments and programme list:** [ADD LATER]
+- **Official student email-domain confirmation:** [CONFIRM BEFORE LAUNCH]
+- **Support/contact email:** [ADD LATER]
+- **Privacy policy URL:** [ADD LATER]
+- **Terms URL:** [ADD LATER]
+
+---
+
+# 24. Final product summary
+
+This platform is a university-only skill and help network. Students register with verified institutional email addresses, create profiles showing their departments, semesters, skills, portfolio, availability, and verified work history, and then use the platform to find people or request help.
+
+A request stays in the public feed for up to 24 hours. Matching students receive temporary request alerts that remain in their Request Alerts inbox for 12 hours. Students can make offers, compare interested helpers, and select one person. Once selected, the request moves to Processing and is temporarily removed from the public active feed. If the selected helper cancels and time remains, the request returns to the feed. When work is completed, the requester must submit a star rating; a written comment is optional. Every normal completed job therefore produces one verified rating.
+
+The result should feel like a helpful, trusted student network—not a generic social network and not a copy of a public freelance marketplace. Its core loop is:
+
+**ASK → MATCH → OFFER → CHAT → WORK → REVIEW → BUILD REPUTATION → CONNECT**
+
+Build the first release around this loop. Keep the name and theme configurable for later.

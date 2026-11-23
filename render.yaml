@@ -1,0 +1,17 @@
+services:
+  - type: web
+    name: unilink
+    runtime: node
+    plan: free
+    buildCommand: npm install --include=dev && npm run build
+    startCommand: NODE_ENV=production npm start
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_VERSION
+        value: 22
+      - key: SESSION_SECRET
+        generateValue: true
+      - key: SQLITE_DB_PATH
+        value: ./data/unilink.db
+      - key: ADMIN_EMAILS
+        value: admin@numl.edu.pk

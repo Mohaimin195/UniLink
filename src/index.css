@@ -1,0 +1,60 @@
+@import "tailwindcss";
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+  --font-display: "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-sans: "DM Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+}
+
+@layer base {
+  :root {
+    --bg-canvas: #F8FAFC;
+    --bg-surface: #FFFFFF;
+    --border-hairline: #E2E8F0;
+    --text-primary: #0F172A;
+    --text-muted: #475569;
+    --accent-primary: #4F46E5;
+    --accent-emerald: #059669;
+  }
+
+  .dark {
+    --bg-canvas: #090D16;
+    --bg-surface: #111827;
+    --border-hairline: #1E293B;
+    --text-primary: #F8FAFC;
+    --text-muted: #94A3B8;
+    --accent-primary: #6366F1;
+    --accent-emerald: #10B981;
+  }
+
+  body {
+    font-family: var(--font-sans);
+    background-color: var(--bg-canvas);
+    color: var(--text-primary);
+    overflow-x: hidden;
+  }
+
+  h1, h2, h3, h4, .font-display {
+    font-family: var(--font-display);
+    text-wrap: balance;
+  }
+
+  .dark body,
+  .dark p,
+  .dark span {
+    letter-spacing: 0.005em;
+  }
+}
+
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

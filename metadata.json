@@ -1,0 +1,6 @@
+{
+  "name": "UniLink",
+  "description": "NUML University Skill & Help Network — Connect with verified peers for tutoring, design, media, and technical help.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
